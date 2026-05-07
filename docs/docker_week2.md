@@ -3,7 +3,7 @@
 ## Obiettivo
 
 Capire come condividere dati persistenti tra container
-e orchestrare più servizi Docker tramite Compose.
+e orchestrare più servizi Docker tramite Docker Compose.
 
 Il progetto utilizza:
 
@@ -11,17 +11,27 @@ Il progetto utilizza:
 - un container API FastAPI
 - un artifact ML condiviso (`model.joblib`)
 
-Workflow:
+---
+
+# Architettura Week 2
 
 ```text
 training container
 ↓
-model.joblib
+model.joblib (persistente)
 ↓
-API container
+FastAPI container
 ↓
-prediction endpoint
+/predict endpoint
 ```
+
+Il sistema separa:
+
+- training
+- artifact persistence
+- inference serving
+
+tramite container Docker indipendenti.
 
 ---
 
@@ -35,11 +45,11 @@ prediction endpoint
 - Port mapping
 - Read-only mount
 - API serving
-- Networking base Docker
+- Networking Docker
 
 ---
 
-# Persistenza del modello
+# Persistenza artifact
 
 Il training container salva il modello ML in:
 
@@ -47,12 +57,15 @@ Il training container salva il modello ML in:
 /data/models/model.joblib
 ```
 
-Senza volumi Docker, il file esisterebbe solo
+Senza volumi Docker,
+il file esisterebbe solo
 nel filesystem interno del container.
 
-Quando il container termina, il file verrebbe eliminato.
+Quando il container termina,
+il file verrebbe eliminato.
 
-Per evitare questo problema è stato utilizzato un bind mount.
+Per mantenere persistente il modello
+è stato utilizzato un bind mount.
 
 ---
 
@@ -70,7 +83,7 @@ docker run --rm \
 Il bind mount collega:
 
 ```text
-HOST (PC locale)
+HOST
 $(pwd)/data/models
 ```
 
@@ -81,32 +94,8 @@ CONTAINER
 /data/models
 ```
 
-In questo modo il file `model.joblib`
-rimane persistente sul filesystem locale
-anche dopo la terminazione del container.
-
----
-
-# Artifact ML
-
-Il file:
-
-```text
-model.joblib
-```
-
-rappresenta un artifact ML:
-
-- modello serializzato
-- output del training
-- riutilizzabile dall'API
-
-Questo permette di separare:
-
-- training
-- serving
-
-in due container distinti.
+Questo permette ai container di training e API
+di condividere lo stesso artifact ML persistente.
 
 ---
 
@@ -129,12 +118,6 @@ Endpoint implementati:
 
 L'API monta il volume in modalità read-only:
 
-```text
-:ro
-```
-
-Esempio:
-
 ```bash
 -v $(pwd)/data/models:/data/models:ro
 ```
@@ -145,8 +128,8 @@ senza poterlo modificare.
 Vantaggi:
 
 - maggiore sicurezza
-- isolamento migliore
-- riduzione errori accidentali
+- migliore isolamento
+- protezione degli artifact ML
 
 ---
 
@@ -275,64 +258,43 @@ Volume Docker:
 
 # Domande finali Week 2
 
-## Perché l'API monta il volume in modalità `:ro` (read-only)?
+## Perché l'API monta il volume in modalità `:ro`?
 
 L'API deve soltanto leggere il file `model.joblib`
 per eseguire inferenza.
 
-Montare il volume in modalità read-only:
-
-```text
-:ro
-```
-
-impedisce modifiche accidentali al modello.
-
-Vantaggi:
-
-- maggiore sicurezza
-- migliore isolamento
-- protezione degli artifact ML
-- riduzione del rischio di corruzione dati
+Il mount read-only impedisce modifiche accidentali
+agli artifact ML.
 
 ---
 
-## Cosa succede al modello se eseguo `docker compose down -v`? E senza `-v`?
-
-Comando:
+## Cosa succede con `docker compose down -v`?
 
 ```bash
 docker compose down
 ```
 
-ferma e rimuove i container,
+rimuove i container
 ma mantiene i volumi Docker.
-
-Gli artifact persistenti rimangono disponibili.
-
-Comando:
 
 ```bash
 docker compose down -v
 ```
 
-rimuove anche i volumi Docker associati.
+rimuove anche i volumi associati.
 
-In quel caso i dati persistenti vengono eliminati.
-
-Nel progetto attuale viene utilizzato un bind mount
-(`./data/models:/data/models`),
-quindi il modello rimane comunque salvato
+Nel progetto attuale viene utilizzato un bind mount,
+quindi il modello rimane salvato
 sul filesystem locale del PC.
 
 ---
 
-## Come fanno due container a parlarsi per nome invece che per IP?
+## Come fanno due container a parlarsi per nome?
 
 Docker Compose crea automaticamente
 una rete bridge interna.
 
-Ogni servizio Compose diventa automaticamente
+Ogni servizio diventa automaticamente
 un hostname DNS interno.
 
 Esempio:
@@ -351,34 +313,7 @@ usando semplicemente:
 db
 ```
 
-come hostname,
-senza conoscere l'indirizzo IP reale.
-
-Questo semplifica networking e orchestrazione
-tra servizi containerizzati.
-
----
-
-# Architettura finale Week 2
-
-```text
-training container
-↓
-model.joblib (persistente)
-↓
-FastAPI container
-↓
-/predict endpoint
-```
-
-Il sistema separa:
-
-- training
-- artifact persistence
-- inference serving
-
-utilizzando container Docker indipendenti
-orchestrati tramite Docker Compose.
+come hostname.
 
 ---
 
@@ -396,20 +331,16 @@ e mantenuto in memoria.
 
 ---
 
-# Osservazioni importanti
+# Risultato ottenuto
 
-Il progetto ora implementa
-un workflow ML containerizzato realistico:
+Il progetto implementa un workflow ML containerizzato
+capace di:
 
-```text
-training
-↓
-artifact persistence
-↓
-API serving
-↓
-prediction endpoint
-```
+- eseguire training in container
+- mantenere artifact persistenti
+- esporre endpoint FastAPI
+- orchestrare servizi tramite Compose
+- separare training e serving
 
-Questo rappresenta una base concreta
+Questa rappresenta una base concreta
 per deployment, CI/CD e MLOps basics.
