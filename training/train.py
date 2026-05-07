@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="/data/models",
+        default="data/models",
         help="Directory where the trained model will be saved"
     )
 

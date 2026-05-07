@@ -1,0 +1,19 @@
+services:
+  training:
+    build:
+      context: ./training
+    image: ml-training
+    volumes:
+      - ./data/models:/data/models
+    profiles:
+      - train
+    command: python train.py --output-dir /data/models
+
+  api:
+    build:
+      context: ./api
+    image: ml-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/models:/data/models:ro
