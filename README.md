@@ -1,15 +1,23 @@
 # ML Serving Stack
 
-Containerized Machine Learning serving workflow using Docker, FastAPI and Docker Compose.
+Containerized Machine Learning serving workflow using Docker, FastAPI, Docker Compose and GitHub Actions.
 
-This project demonstrates a simple production-oriented ML pipeline with:
+This project demonstrates a production-oriented ML serving workflow with:
 
-- training container
-- persistent model artifact
-- FastAPI inference service
-- Docker Compose orchestration
+* training container
+* persistent ML artifact
+* FastAPI inference service
+* Docker Compose orchestration
+* GitHub Actions CI/CD
+* GitHub Container Registry (GHCR)
 
-The goal is to understand the fundamentals of ML serving, containerization and MLOps basics.
+The goal is to understand the fundamentals of:
+
+* ML serving
+* containerization
+* deployment workflows
+* CI/CD
+* MLOps foundations
 
 ---
 
@@ -18,31 +26,38 @@ The goal is to understand the fundamentals of ML serving, containerization and M
 ```text
 training container
 ↓
-model.joblib
+persistent ML artifact
 ↓
 FastAPI serving container
 ↓
-/predict endpoint
+GitHub Actions CI/CD
+↓
+GitHub Container Registry
+↓
+docker pull / docker run
 ```
 
 The system separates:
 
-- model training
-- artifact persistence
-- inference serving
+* model training
+* artifact persistence
+* inference serving
+* image publishing
 
-using independent Docker containers.
+using independent Docker workflows.
 
 ---
 
 # Tech Stack
 
-- Python
-- scikit-learn
-- FastAPI
-- Docker
-- Docker Compose
-- joblib
+* Python
+* scikit-learn
+* FastAPI
+* Docker
+* Docker Compose
+* GitHub Actions
+* GitHub Container Registry (GHCR)
+* joblib
 
 ---
 
@@ -66,9 +81,16 @@ ml-serving-stack/
 │
 ├── docs/
 │   ├── docker_week1.md
-│   └── docker_week2.md
+│   ├── docker_week2.md
+│   ├── docker_week3.md
+│   └── docker_week4.md
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 │
 ├── docker-compose.yml
+├── .gitignore
 └── README.md
 ```
 
@@ -132,27 +154,90 @@ http://localhost:8000/docs
 
 ---
 
-# Key Concepts Practiced
+# CI/CD Pipeline
 
-- Docker containerization
-- Layer caching
-- Bind mounts
-- Persistent ML artifacts
-- FastAPI model serving
-- Docker Compose orchestration
-- Container networking
-- Read-only volumes
+The repository includes a GitHub Actions workflow that:
+
+* builds the FastAPI Docker image
+* publishes the image to GitHub Container Registry
+* enables image portability across environments
+
+Workflow file:
+
+```text
+.github/workflows/ci.yml
+```
+
+Published image:
+
+```text
+ghcr.io/donatocorbaciodev/ml-api:latest
+```
 
 ---
 
-# Current Limitations
+# Running the Published Image
 
-The model is currently loaded at every request inside `/predict`.
+Pull image from GHCR:
 
-This is acceptable for learning purposes,
-but not optimal for production systems.
+```bash
+docker pull ghcr.io/donatocorbaciodev/ml-api:latest
+```
 
-In real-world applications the model is usually loaded once during API startup and kept in memory.
+Run container with mounted ML artifact:
+
+```bash
+docker run --rm -p 8000:8000 \
+  -v "$(pwd)/data/models:/data/models:ro" \
+  ghcr.io/donatocorbaciodev/ml-api:latest
+```
+
+---
+
+# Key Concepts Practiced
+
+* Docker containerization
+* Layer caching
+* Bind mounts
+* Persistent ML artifacts
+* FastAPI model serving
+* Docker Compose orchestration
+* Container networking
+* Read-only volumes
+* Docker HEALTHCHECK
+* Non-root containers
+* Docker Scout vulnerability scanning
+* GitHub Actions CI/CD
+* Container registry publishing
+* ML artifact separation
+
+---
+
+# Production-Oriented Features
+
+The project includes several production-oriented practices:
+
+* startup model loading
+* container health monitoring
+* non-root container execution
+* vulnerability scanning
+* CI/CD automation
+* image publishing workflow
+* artifact separation from application image
+
+---
+
+# Current Scope
+
+The repository currently focuses on:
+
+* Docker-based ML serving
+* local deployment workflows
+* CI/CD fundamentals
+* ML artifact management
+* container lifecycle understanding
+
+Advanced orchestration technologies such as Kubernetes are intentionally out of scope at this stage.
 
 ---
 
@@ -160,8 +245,23 @@ In real-world applications the model is usually loaded once during API startup a
 
 This repository is part of a hands-on learning path focused on:
 
-- ML Engineering
-- Docker
-- API serving
-- deployment workflows
-- MLOps fundamentals
+* ML Engineering
+* Docker
+* API serving
+* deployment workflows
+* CI/CD
+* MLOps fundamentals
+
+---
+
+# Future Improvements
+
+Possible future extensions:
+
+* forecasting model serving
+* model versioning
+* automated testing
+* MLflow integration
+* cloud deployment
+* Kubernetes orchestration
+* GPU-based inference
