@@ -1,4 +1,4 @@
-name: CI Docker API
+name: CI Docker API TEST
 
 on:
   push:
